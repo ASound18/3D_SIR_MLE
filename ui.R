@@ -1,9 +1,9 @@
 library(shiny)
 library(plotly)
 
-grid_df <- readRDS("grid_df_SIR.rds")
-grid_df$measurement_noise_volatility_values = as.numeric(as.character(grid_df$measurement_noise_volatility_values))
-values = sort(unique(grid_df$measurement_noise_volatility_values))
+grid_df <- readRDS("grid_df_SIR2.rds")                                               ## read in raw data frame
+grid_df = as.data.frame(apply(grid_df, 2, function(x) as.numeric(as.character(x))))  ## somehow numeric does not behave thus coerce
+values = sort(unique(grid_df$measurement_noise_volatility_values))                   ## all unique values for delta
 
 
 shinyUI(fluidPage(
@@ -12,9 +12,20 @@ shinyUI(fluidPage(
   
   sidebarLayout(
     sidebarPanel(
-      sliderInput("delta", "Measurement Noise Volatility (Delta):", min = 0, max = max(values), step = 1e-3, value = 0, animate=TRUE),
-      br(),br()
-      
+      sliderInput("delta", "Measurement Noise Volatility (Delta):", min = 0, max = max(values), step = 0.005, value = 0, animate=TRUE),
+      br(),br(),
+      fluidRow(
+        column(12, h4(strong("Global Optimum"))),
+        column(12, h5(strong("Optimal Asset Drift:"))),
+        column(12, textOutput("maxPointG_x")),
+        column(12, h5(strong("Optimal Asset Volatility:"))),
+        column(12, textOutput("maxPointG_y")),
+        column(12, h5(strong("Optimal Delta:"))),
+        column(6, textOutput("maxPointG_delta")),
+        column(6, actionButton("optimalDeltaButton", "View by this optimal Delta", icon = icon("eye"))),
+        column(12, h5(strong("Optimal Log-Likelihood:"))),
+        column(12, textOutput("maxPointG_z"))
+      )
     ),
     
     mainPanel(
