@@ -1,7 +1,7 @@
 library(shiny)
 library(plotly)
 
-grid_df <- readRDS("grid_df_SIR2.rds")                                               ## read in raw data frame
+grid_df <- readRDS("grid_df_SIR15.rds")                                               ## read in raw data frame
 grid_df = as.data.frame(apply(grid_df, 2, function(x) as.numeric(as.character(x))))  ## somehow numeric does not behave thus coerce
 values = sort(unique(grid_df$measurement_noise_volatility_values))                   ## all unique values for delta
 
@@ -14,7 +14,7 @@ shinyUI(fluidPage(
     tabPanel("View By Single Layer",
              sidebarLayout(
                sidebarPanel(
-                 sliderInput("delta", "Measurement Noise Volatility (Delta):", min = 0, max = max(values), step = 0.005, value = 0, animate=TRUE),
+                 sliderInput("delta", "Measurement Noise Volatility (Delta):", min = 0, max = max(values), step = 0.002, value = 0, animate=TRUE),
                  br(),br(),
                  fluidRow(
                    column(12, h4(strong("Global Optimum"))),

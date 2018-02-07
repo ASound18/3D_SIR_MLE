@@ -1,8 +1,9 @@
 library(shiny)
 
-grid_df <- readRDS("grid_df_SIR2.rds")                                                ## read in raw data frame
+grid_df <- readRDS("grid_df_SIR15.rds")                                                ## read in raw data frame
 grid_df = as.data.frame(apply(grid_df, 2, function(x) as.numeric(as.character(x))))   ## somehow numeric does not behave thus coerce
 grid_df$logLik = -grid_df$logLik                                                      ## the original logLik returns the negative of loglikelihood
+grid_df$logLik[grid_df$logLik == -Inf] = NA                                            ## convert -Inf to NA
 max_Loglik_G = max(grid_df$logLik, na.rm = TRUE)                                      ## all unique values for delta
 values = sort(unique(grid_df$measurement_noise_volatility_values))
 
@@ -12,11 +13,13 @@ shinyServer(function(input, output, session) {
   
   output$plot <- renderPlotly({
     input_delta = input$delta
-    if(input_delta == 0) input_delta = 1e-4
+    if(input_delta == 0) input_delta = 0.0005
     temp_df = grid_df[grid_df$measurement_noise_volatility_values == input_delta,]
     x = unique(temp_df$asset_drift_values)
     y = unique(temp_df$asset_volatility_values)
     z = t(matrix(temp_df$logLik, nrow = length(x)))
+    # z = apply(z, c(1,2), function(x) if(x==-Inf){NA}else{x})  
+    
     maxLogLik = max(temp_df$logLik, na.rm = TRUE)
     
     plot_ly(x = x, y = y, z = z) %>% 
@@ -31,7 +34,7 @@ shinyServer(function(input, output, session) {
   
   output$maxPoint_x <- renderText({
     input_delta = input$delta
-    if(input_delta == 0) input_delta = 1e-4
+    if(input_delta == 0) input_delta = 0.0005
     temp_df = grid_df[grid_df$measurement_noise_volatility_values == input_delta,]
     maxLogLik = max(temp_df$logLik, na.rm = TRUE)
     ans = temp_df$asset_drift_values[temp_df$logLik==maxLogLik]
@@ -40,7 +43,7 @@ shinyServer(function(input, output, session) {
   
   output$maxPoint_y <- renderText({
     input_delta = input$delta
-    if(input_delta == 0) input_delta = 1e-4
+    if(input_delta == 0) input_delta = 0.0005
     temp_df = grid_df[grid_df$measurement_noise_volatility_values == input_delta,]
     maxLogLik = max(temp_df$logLik, na.rm = TRUE)
     ans = temp_df$asset_volatility_values[temp_df$logLik==maxLogLik]
@@ -49,7 +52,7 @@ shinyServer(function(input, output, session) {
   
   output$maxPoint_z <- renderText({
     input_delta = input$delta
-    if(input_delta == 0) input_delta = 1e-4
+    if(input_delta == 0) input_delta = 0.0005
     temp_df = grid_df[grid_df$measurement_noise_volatility_values == input_delta,]
     max(temp_df$logLik, na.rm = TRUE)
   })
@@ -91,6 +94,13 @@ shinyServer(function(input, output, session) {
   output$plot2 <- renderPlotly({
     
     withProgress(message = 'Rendering plot', value = 0.6, {
+      for(value in values){
+        if(sum(grid_df$logLik[grid_df$measurement_noise_volatility_values == value], na.rm = TRUE) == 0) {
+          grid_df = grid_df[grid_df$measurement_noise_volatility_values != value,]
+          values = values[values != value]
+        }
+      }
+      
       pnts_x = rep(NA, length(values))
       pnts_y = rep(NA, length(values))
       pnts_z = rep(NA, length(values))
@@ -124,23 +134,23 @@ shinyServer(function(input, output, session) {
         add_surface(x = x, y = y, z = z9, opacity = 0.9) %>%
         add_surface(x = x, y = y, z = z10, opacity = 0.9) %>%
         add_surface(x = x, y = y, z = z11, opacity = 0.9) %>%
-        add_surface(x = x, y = y, z = z12, opacity = 0.9) %>%
-        add_surface(x = x, y = y, z = z13, opacity = 0.9) %>%
-        add_surface(x = x, y = y, z = z14, opacity = 0.9) %>%
-        add_surface(x = x, y = y, z = z15, opacity = 0.9) %>%
-        add_surface(x = x, y = y, z = z16, opacity = 0.9) %>%
-        add_surface(x = x, y = y, z = z17, opacity = 0.9) %>%
-        add_surface(x = x, y = y, z = z18, opacity = 0.9) %>%
-        add_surface(x = x, y = y, z = z19, opacity = 0.9) %>%
-        add_surface(x = x, y = y, z = z20, opacity = 0.9) %>%
-        add_surface(x = x, y = y, z = z21, opacity = 0.9) %>%
+        # add_surface(x = x, y = y, z = z12, opacity = 0.9) %>%
+        # add_surface(x = x, y = y, z = z13, opacity = 0.9) %>%
+        # add_surface(x = x, y = y, z = z14, opacity = 0.9) %>%
+        # add_surface(x = x, y = y, z = z15, opacity = 0.9) %>%
+        # add_surface(x = x, y = y, z = z16, opacity = 0.9) %>%
+        # add_surface(x = x, y = y, z = z17, opacity = 0.9) %>%
+        # add_surface(x = x, y = y, z = z18, opacity = 0.9) %>%
+        # add_surface(x = x, y = y, z = z19, opacity = 0.9) %>%
+        # add_surface(x = x, y = y, z = z20, opacity = 0.9) %>%
+        # add_surface(x = x, y = y, z = z21, opacity = 0.9) %>%
         add_trace(#data = temp_df, 
           x = pnts_x,
           y = pnts_y,
           z = pnts_z,
           mode = "lines+markers", type = "scatter3d") %>%
         layout(autosize = F, width = 800, height = 800)
-    })
+     })
     
     
   })
